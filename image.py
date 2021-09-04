@@ -9,10 +9,9 @@ def wrap_image(image, N):
     
     for i in range(0, image.shape[0]):
         for j in range(0, image.shape[1]):
-            #for k in range(0,3):
-                q, mod = divmod(image[i][j], np.power(2, N))
-                wrapped_image[i][j] = mod
-                roll_over[i][j] = q 
+            q, mod = divmod(image[i][j], np.power(2, N))
+            wrapped_image[i][j] = mod
+            roll_over[i][j] = q 
     
     return wrapped_image, roll_over
             
@@ -21,8 +20,7 @@ def unwrap_image(image, roll_over, N):
     
     for i in range(0, image.shape[0]):
         for j in range(0, image.shape[1]):
-            for k in range(0,3):
-                unwrapped_image[i][j][k] = image[i][j][k] + roll_over[i][j][k]*np.power(2,N)
+            unwrapped_image[i][j] = image[i][j]+ roll_over[i][j]*np.power(2,N)
         
     return unwrapped_image
          
@@ -33,23 +31,32 @@ image_name = input()
 print("Enter N-bits of the Modulo Camera:")
 N = int(input())
 
-image = cv2.imread(image_name)
-
+image = cv2.imread(image_name, -1)
+image = cv2.imread(image_name, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+normed = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+color = cv2.applyColorMap(normed, cv2.COLORMAP_JET)
 # Perform wrapping
 image_wrapped, roll_over = wrap_image(image, N)
 
 #Perform Unwrapping
 image_unwrapped = unwrap_image(image_wrapped, roll_over, N)
+image_unwrapped = image_unwrapped.astype(np.uint16)
+normed = cv2.normalize(image_unwrapped, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+im_un= cv2.applyColorMap(normed, cv2.COLORMAP_JET)
 
 fig, ax = plt.subplots(3, 1, sharex=True, sharey=True)
 ax1, ax2, ax3 = ax.ravel()
 
-fig.colorbar(ax1.imshow(image), ax=ax1)
-ax1.set_title('Original')
-
+fig.colorbar(ax1.imshow(color.astype(np.uint8)), ax=ax1)
+ax1.set_title('Original Image')
+cv2.imwrite('original_image.jpg', color)
 
 fig.colorbar(ax2.imshow(image_wrapped.astype(np.uint8)), ax=ax2)
-ax2.set_title('Wrapped phase')
+ax2.set_title('Wrapped Image')
+cv2.imwrite('image_wrapped.jpg', image_wrapped.astype(np.uint8))
 
-fig.colorbar(ax3.imshow(image_unwrapped.astype(np.uint8)), ax=ax3)
-ax3.set_title('UnWrapped phase')
+fig.colorbar(ax3.imshow(im_un.astype(np.uint8)), ax=ax3)
+ax3.set_title('UnWrapped Image')
+cv2.imwrite('im_unwrapped.jpg', im_un)
+
+
